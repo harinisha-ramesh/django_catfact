@@ -29,26 +29,6 @@ class CatFactSerializerTestCase(APITestCase):
 
         self.assertFalse(serializer.is_valid())
 
-# class CatFactViewTestCase(APITestCase):
-#     @patch('requests.get')
-#     def test_fetch_cat_fact_view(self, mock_get):
-#         cat_fact = CatFactFactory.create()
-
-#         mock_data = {
-#             'fact': cat_fact,
-#             'length': cat_fact
-#         }
-#         mock_get.return_value.status_code = 200
-#         mock_get.return_value.json.return_value = mock_data
-
-#         response = self.client.get(reverse('fetch_cat_fact'))
-
-#         self.assertEqual(response.status_code,201)
-
-#         self.assertEqual(response.json()['fact'],mock_data['fact'])
-#         self.assertEqual(response.json()['length'],mock_data['length'])
-
-#         self.assertTrue(CatFact.objects.filter(fact=mock_data['fact']).exists())
 
 class CatFactViewTestCase(APITestCase):
     def setUp(self):
@@ -99,3 +79,24 @@ class CatFactViewTestCase(APITestCase):
 
 #         self.assertFalse(serializer.is_valid())
 #         self.assertIn('length',serializer.errors)
+
+# class CatFactViewTestCase(APITestCase):
+#     @patch('requests.get')
+#     def test_fetch_cat_fact_view(self, mock_get):
+#         cat_fact = CatFactFactory.create()
+
+#         mock_data = {
+#             'fact': cat_fact,
+#             'length': cat_fact
+#         }
+#         mock_get.return_value.status_code = 200
+#         mock_get.return_value.json.return_value = mock_data
+
+#         response = self.client.get(reverse('fetch_cat_fact'))
+
+#         self.assertEqual(response.status_code,201)
+
+#         self.assertEqual(response.json()['fact'],mock_data['fact'])
+#         self.assertEqual(response.json()['length'],mock_data['length'])
+
+#         self.assertTrue(CatFact.objects.filter(fact=mock_data['fact']).exists())
