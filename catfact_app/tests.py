@@ -29,7 +29,6 @@ class CatFactSerializerTestCase(APITestCase):
 
         self.assertFalse(serializer.is_valid())
 
-
 class CatFactViewTestCase(APITestCase):
     def setUp(self):
         self.fake = Faker()
@@ -66,7 +65,7 @@ class CatFactViewTestCase(APITestCase):
 
 # class CatFactSerializerTestCase(APITestCase):
 #     def test_serializer_valid_data(self):
-#         cat_fact = CatFactFactory.create()
+#         cat_fact = CatFactFactory.create() 
 
 #         serializer = CatFactSerializer(cat_fact)
 
