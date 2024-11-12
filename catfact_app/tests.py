@@ -33,31 +33,33 @@ class CatFactViewTestCase(APITestCase):
     def setUp(self):
         self.fake = Faker()
 
-    @patch('requests.get')
-    def test_fetch_cat_fact_view(self, mock_get):
-        mock_data = {
-            'fact': self.fake.sentence(nb_words=15),
-            'length': self.fake.random_int(min=10, max=150) 
-        }
-        mock_get.return_value.status_code = 200
-        mock_get.return_value.json.return_value = mock_data
+    # @patch('requests.get')
+    def test_fetch_cat_fact_view(self):
+        with patch("requests.get") as mock_get:
+            mock_data = {
+                'fact': self.fake.sentence(nb_words=15),
+                'length': self.fake.random_int(min=10, max=150) 
+            }
+            mock_get.return_value.status_code = 200
+            mock_get.return_value.json.return_value = mock_data
 
-        response = self.client.get(reverse('fetch_cat_fact'))
+            response = self.client.get(reverse('fetch_cat_fact'))
 
-        self.assertEqual(response.status_code, 201)  
-        self.assertEqual(response.json()['fact'], mock_data['fact'])
-        self.assertEqual(response.json()['length'], mock_data['length'])
+            self.assertEqual(response.status_code, 201)  
+            self.assertEqual(response.json()['fact'], mock_data['fact'])
+            self.assertEqual(response.json()['length'], mock_data['length'])
 
-        self.assertTrue(CatFact.objects.filter(fact=mock_data['fact']).exists())
+            self.assertTrue(CatFact.objects.filter(fact=mock_data['fact']).exists())
 
-    @patch('requests.get')
-    def test_fetch_cat_fetch_view_failure(self, mock_get):
-        mock_get.return_value.status_code = 500
+    # @patch('requests.get')
+    def test_fetch_cat_fetch_view_failure(self):
+        with patch("requests.get") as mock_get:
+            mock_get.return_value.status_code = 500
 
-        response = self.client.get(reverse('fetch_cat_fact')) 
+            response = self.client.get(reverse('fetch_cat_fact')) 
 
-        self.assertEqual(response.status_code, 400)
-        self.assertEqual(response.json()['detail'], "Failed to get cat fact")
+            self.assertEqual(response.status_code, 400)
+            self.assertEqual(response.json()['detail'], "Failed to get cat fact")
 
 
 
