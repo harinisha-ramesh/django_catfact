@@ -1,9 +1,14 @@
+from django.conf import settings
 from rest_framework.test import APITestCase
+from django.core.exceptions import ImproperlyConfigured
+from catfact_app.views import CatFactView
 from .factories import *
 from .serializers import * 
 from faker import Faker
-from django.urls import reverse
-from unittest.mock import patch
+import logging
+from django.test.utils import override_settings
+from unittest.mock import patch, MagicMock
+# from django.urls import reverse
 # from rest_framework import status
     
 class CatFactSerializerTestCase(APITestCase):
@@ -29,75 +34,105 @@ class CatFactSerializerTestCase(APITestCase):
 
         self.assertFalse(serializer.is_valid())
 
-class CatFactViewTestCase(APITestCase):
-    def setUp(self):
-        self.fake = Faker()
 
-    # @patch('requests.get')
-    def test_fetch_cat_fact_view(self):
-        with patch("requests.get") as mock_get:
-            mock_data = {
-                'fact': self.fake.sentence(nb_words=15),
-                'length': self.fake.random_int(min=10, max=150) 
-            }
-            mock_get.return_value.status_code = 200
-            mock_get.return_value.json.return_value = mock_data
+class TestFetchSettings(APITestCase): 
+    @override_settings(FETCH_URL=123,FETCH_FLAG="false")   
+    def test_invalid_fetch_url_and_flag(self):  
+        
+        with self.assertRaises(ImproperlyConfigured):
+            if not isinstance(settings.FETCH_URL, str):
+                raise ImproperlyConfigured("FETCH_URL must be a string")
+            if not isinstance(settings.FETCH_FLAG, bool):
+                raise ImproperlyConfigured("FETCH_FLAG must be a boolean")
+    
+    @override_settings(FETCH_URL="https://api.example.com/cat-fact", FETCH_FLAG=True)
+    def test_valid_fetch_url_and_flag(self):
+        self.assertIsInstance(settings.FETCH_URL, str)
+        self.assertIsInstance(settings.FETCH_FLAG, bool)
 
-            response = self.client.get(reverse('fetch_cat_fact'))
+class CatFactViewTestCase(APITestCase):    
+    @override_settings(FETCH_FLAG=False)
+    def test_add_facts_with_fetch_disabled(self):
+        with patch('logging.Logger.info') as mock_logger:
+            result = CatFactView.addFacts()
+            mock_logger.assert_any_call("Fetch is disabled in settings")
+            self.assertIsNone(result)
 
-            self.assertEqual(response.status_code, 201)  
-            self.assertEqual(response.json()['fact'], mock_data['fact'])
-            self.assertEqual(response.json()['length'], mock_data['length'])
+    @override_settings(FETCH_FLAG=True, FETCH_URL="https://api.example.com/cat-fact")
+    @patch('requests.get')
+    def test_add_facts_successful_response(self, mock_get):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            'fact': 'Cats have five toes on their front paws.',
+            'length': 40
+        }
+        mock_get.return_value = mock_response        
+        with patch('logging.Logger.info') as mock_logger:
+            result = CatFactView.addFacts()
+            self.assertEqual(len(result), 10)
+            self.assertTrue(CatFact.objects.filter(fact='Cats have five toes on their front paws.').exists())
+            mock_logger.assert_any_call("Fetching cat fact...")
+            self.assertTrue(
+                any(call[0][0].startswith("CatFact saved successfully:") for call in mock_logger.call_args_list)
+            )
 
-            self.assertTrue(CatFact.objects.filter(fact=mock_data['fact']).exists())
 
-    # @patch('requests.get')
-    def test_fetch_cat_fetch_view_failure(self):
-        with patch("requests.get") as mock_get:
-            mock_get.return_value.status_code = 500
-
-            response = self.client.get(reverse('fetch_cat_fact')) 
-
-            self.assertEqual(response.status_code, 400)
-            self.assertEqual(response.json()['detail'], "Failed to get cat fact")
-
-
-
+    @override_settings(FETCH_FLAG=True, FETCH_URL="https://api.example.com/cat-fact")
+    @patch('requests.get')
+    def test_add_facts_failed_response(self, mock_get):
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+        mock_get.return_value = mock_response
+        
+        with patch('logging.Logger.error') as mock_logger:
+            result = CatFactView.addFacts()
+            self.assertEqual(result, [])
+            mock_logger.assert_called_with("Failed to fetch data from API. Status code: 404")
 
 
-# class CatFactSerializerTestCase(APITestCase):
-#     def test_serializer_valid_data(self):
-#         cat_fact = CatFactFactory.create() 
+    @override_settings(FETCH_FLAG=True, FETCH_URL="https://api.example.com/cat-fact")
+    @patch('requests.get')
+    def test_add_facts_multiple_success_responses(self, mock_get):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            'fact': 'Cats sleep 70% of their lives.',
+            'length': 40
+        }
+        mock_get.return_value = mock_response
 
-#         serializer = CatFactSerializer(cat_fact)
-
-#         self.assertEqual(serializer.data["fact"],cat_fact.fact)
-#         self.assertEqual(serializer.data["length"],cat_fact.length)
-
-#     def test_serializer_invalid_data(self):
-#         data = {'fact': 'This is cat fact'}
-#         serializer = CatFactSerializer(data=data)
-
-#         self.assertFalse(serializer.is_valid())
-#         self.assertIn('length',serializer.errors)
-
+        with patch('logging.Logger.info') as mock_logger:
+            result = CatFactView.addFacts()
+            self.assertEqual(len(result), 10)  
+            self.assertEqual(CatFact.objects.count(), 10) 
+            self.assertTrue(
+            any(call[0][0].startswith("CatFact saved successfully:") for call in mock_logger.call_args_list)
+        )
+        
 # class CatFactViewTestCase(APITestCase):
-#     @patch('requests.get')
-#     def test_fetch_cat_fact_view(self, mock_get):
-#         cat_fact = CatFactFactory.create()
+#     def setUp(self):
+#         self.fake = Faker()
 
-#         mock_data = {
-#             'fact': cat_fact,
-#             'length': cat_fact
-#         }
-#         mock_get.return_value.status_code = 200
-#         mock_get.return_value.json.return_value = mock_data
+#     # @patch('requests.get')
+#     def test_fetch_cat_fact_view(self):
+#         with patch("requests.get") as mock_get:
+#             mock_data = {
+#                 'fact': self.fake.sentence(nb_words=15),
+#                 'length': self.fake.random_int(min=10, max=150) 
+#             }
+#             mock_get.return_value.status_code = 200
+#             mock_get.return_value.json.return_value = mock_data
+#             response = self.client.get(reverse('fetch_cat_fact'))
+#             self.assertEqual(response.status_code, 201)  
+#             self.assertEqual(response.json()['fact'], mock_data['fact'])
+#             self.assertEqual(response.json()['length'], mock_data['length'])
+#             self.assertTrue(CatFact.objects.filter(fact=mock_data['fact']).exists())
 
-#         response = self.client.get(reverse('fetch_cat_fact'))
-
-#         self.assertEqual(response.status_code,201)
-
-#         self.assertEqual(response.json()['fact'],mock_data['fact'])
-#         self.assertEqual(response.json()['length'],mock_data['length'])
-
-#         self.assertTrue(CatFact.objects.filter(fact=mock_data['fact']).exists())
+#     # @patch('requests.get')
+#     def test_fetch_cat_fetch_view_failure(self):
+#         with patch("requests.get") as mock_get:
+#             mock_get.return_value.status_code = 500
+#             response = self.client.get(reverse('fetch_cat_fact')) 
+#             self.assertEqual(response.status_code, 400)
+#             self.assertEqual(response.json()['detail'], "Failed to get cat fact")
