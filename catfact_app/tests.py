@@ -38,10 +38,10 @@ class TestFetchSettings(APITestCase):
     @override_settings(FETCH_URL=123,FETCH_FLAG="false")   
     def test_invalid_fetch_url_and_flag(self):  
         
-        with self.assertRaises(ImproperlyConfigured):
-            if not isinstance(settings.FETCH_URL, str):
+        with self.assertRaises(ImproperlyConfigured): 
+            if not isinstance(settings.FETCH_URL, str): 
                 raise ImproperlyConfigured("FETCH_URL must be a string")
-            if not isinstance(settings.FETCH_FLAG, bool):
+            if not isinstance(settings.FETCH_FLAG, bool): 
                 raise ImproperlyConfigured("FETCH_FLAG must be a boolean")
     
     @override_settings(FETCH_URL="https://api.example.com/cat-fact", FETCH_FLAG=True)
