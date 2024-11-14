@@ -3,9 +3,8 @@ from rest_framework.test import APITestCase
 from django.core.exceptions import ImproperlyConfigured
 from catfact_app.views import CatFactView
 from .factories import *
-from .serializers import * 
+from .serializers import *
 from faker import Faker
-import logging
 from django.test.utils import override_settings
 from unittest.mock import patch, MagicMock
 # from django.urls import reverse
