@@ -5,5 +5,4 @@ class CatFact(models.Model):
     length = models.IntegerField()
 
     def __str__(self):
-        return f"CatFact(fact={self.fact},length={self.length})"  
-     
+        return f"CatFact(fact={self.fact},length={self.length})"      
