@@ -31,14 +31,11 @@ class CatFactView:
                     serializer.save()
                     logger.info(f"CatFact saved successfully: {serializer.validated_data}")
                     resultData.append(serializer.validated_data)
-
                 else:
                     logger.error(f"Serializer validation failed: {serializer.errors}")
             else:
                 logger.error(f"Failed to fetch data from API. Status code: {response.status_code}")  
         return resultData                  
-
-
 
 
 
