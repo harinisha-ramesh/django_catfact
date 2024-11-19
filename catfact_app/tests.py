@@ -5,16 +5,19 @@ from catfact_app.views import CatFactView
 from .factories import *
 from .serializers import *
 from faker import Faker
+import requests
 from django.test.utils import override_settings
 from unittest.mock import patch, MagicMock
 # from django.urls import reverse
 # from rest_framework import status
     
 class CatFactSerializerTestCase(APITestCase):
+    '''Testing the serializers'''
     def setUp(self):
         self.fake = Faker()
 
     def test_serializer_valid_data(self):
+        '''Chechking the serializer with the valid data'''
         data = {
             'fact': self.fake.sentence(nb_words=15),
             'length': self.fake.random_int()
@@ -25,6 +28,7 @@ class CatFactSerializerTestCase(APITestCase):
         self.assertEqual(serializer.validated_data, data)
 
     def test_serializer_invalid_data(self):
+        '''verifying the serializer by providing the invalid data'''
         invalid_data = {
             'fact': '',
             'length': self.fake.random_int()
@@ -32,6 +36,16 @@ class CatFactSerializerTestCase(APITestCase):
         serializer = CatFactSerializer(data=invalid_data)
 
         self.assertFalse(serializer.is_valid())
+
+    def test_serializer_with_negative_length(self):
+        '''Verifies unsuccessful validation with negative length'''
+        invalid_data = {
+            'fact': self.fake.sentence(nb_words=15),
+            'length':-55
+        }
+        serializer = CatFactSerializer(data=invalid_data)
+        self.assertFalse(serializer.is_valid())
+        self.assertIn('length', serializer.errors)     
 
 
 class TestFetchSettings(APITestCase): 
@@ -91,23 +105,24 @@ class CatFactViewTestCase(APITestCase):
 
 
     @override_settings(FETCH_FLAG=True, FETCH_URL="https://api.example.com/cat-fact")
-    @patch('requests.get')
-    def test_add_facts_multiple_success_responses(self, mock_get):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            'fact': 'Cats sleep 70% of their lives.',
-            'length': 40
-        }
-        mock_get.return_value = mock_response
+    # @patch('requests.get')
+    def test_add_facts_multiple_success_responses(self):
+        with patch("requests.get") as mock_get:
+            mock_response = MagicMock()
+            mock_response.status_code = 200
+            mock_response.json.return_value = {
+                'fact': 'Cats sleep 70% of their lives.',
+                'length': 40
+            }
+            mock_get.return_value = mock_response
 
-        with patch('logging.Logger.info') as mock_logger:
-            result = CatFactView.addFacts()
-            self.assertEqual(len(result), 10)  
-            self.assertEqual(CatFact.objects.count(), 10) 
-            self.assertTrue(
-            any(call[0][0].startswith("CatFact saved successfully:") for call in mock_logger.call_args_list)
-        )
+            with patch('logging.Logger.info') as mock_logger:
+                result = CatFactView.addFacts()
+                self.assertEqual(len(result), 10)  
+                self.assertEqual(CatFact.objects.count(), 10) 
+                self.assertTrue(
+                any(call[0][0].startswith("CatFact saved successfully:") for call in mock_logger.call_args_list)
+            )
         
 # class CatFactViewTestCase(APITestCase):
 #     def setUp(self):
