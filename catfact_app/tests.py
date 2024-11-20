@@ -39,7 +39,7 @@ class CatFactSerializerTestCase(APITestCase):
 
 class TestFetchSettings(APITestCase): 
     def test_invalid_fetch_settings(self):
-        '''Verifies error message response of FetchCatFactView on absence FETCH_URL and FETCH_FLAG'''
+        '''Verifies error message response of CatFactView on absence of FETCH_URL and FETCH_FLAG'''
         error = "FETCH_URL and FETCH_FLAG must be valid"
         test_cases = [
         {"FETCH_URL": "ht5656we", "FETCH_FLAG": False},
