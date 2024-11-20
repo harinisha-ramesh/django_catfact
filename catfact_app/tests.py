@@ -6,10 +6,7 @@ from .factories import *
 from .serializers import *
 from faker import Faker
 import requests
-from django.test.utils import override_settings
 from unittest.mock import patch, MagicMock
-# from django.urls import reverse
-# from rest_framework import status
     
 class CatFactSerializerTestCase(APITestCase):
     '''Testing the serializers'''
@@ -55,14 +52,7 @@ class TestFetchSettings(APITestCase):
                     with self.assertRaises(ImproperlyConfigured) as im:
                         CatFactView.addFacts()
                     self.assertEqual(str(im.exception), error)
-    
-    @override_settings(FETCH_URL="https://api.example.com/cat-fact", FETCH_FLAG=True)
-    def test_valid_fetch_url_and_flag(self):
-        self.assertIsInstance(settings.FETCH_URL, str)
-        self.assertIsInstance(settings.FETCH_FLAG, bool)
 
-class CatFactViewTestCase(APITestCase):    
-    
     def test_invalid_bool_string_settings(self):
         error = "FETCH_URL must be a string and FETCH_FLAG must be a boolean"
         test_cases = [
@@ -72,21 +62,27 @@ class CatFactViewTestCase(APITestCase):
         for case in test_cases:
             with self.subTest(case=case):
                 with self.settings(FETCH_URL=case["FETCH_URL"], FETCH_FLAG=case["FETCH_FLAG"]):
-                    with self.assertRaises(ImproperlyConfigured) as cm:
+                    with self.assertRaises(ImproperlyConfigured) as im:
                         CatFactView.addFacts()
-                    self.assertEqual(str(cm.exception), error)
+                    self.assertEqual(str(im.exception), error)                 
+    
+    # @override_settings(FETCH_URL="https://api.example.com/cat-fact", FETCH_FLAG=True)
+    def test_valid_fetch_url_and_flag(self):
+        with self.settings(FETCH_URL="https://api.example.com/cat-fact", FETCH_FLAG=True):
+            self.assertIsInstance(settings.FETCH_URL, str)
+            self.assertIsInstance(settings.FETCH_FLAG, bool)
 
+class CatFactViewTestCase(APITestCase):    
+    
     def test_add_facts_url_flag_successful_response(self):
         '''Verifies successful response of FetchCatFactView on valid FETCH_URL and FETCH_FLAG'''
         with self.settings(FETCH_URL="ejhfw", FETCH_FLAG=True):
             self.assertIsInstance(settings.FETCH_URL, str)
             self.assertIsInstance(settings.FETCH_FLAG, bool)  
             with patch('requests.get') as mock_get:
-                # Mock successful API response
                 mock_data = CatFactFactory()
                 mock_get.return_value = MagicMock(status_code=200, json=lambda: mock_data)
                 result = CatFactView.addFacts()
-                # Validate facts saved to the database
                 saved_facts = CatFact.objects.all()
                 self.assertEqual(len(saved_facts), 10) 
                 self.assertEqual(len(result), 10)   
@@ -118,7 +114,6 @@ class CatFactViewTestCase(APITestCase):
     def test_network_error_handling(self):
         with self.settings(FETCH_URL="url", FETCH_FLAG=True):
             with patch('requests.get') as mock_get:
-                # Mock a network error
                 mock_get.side_effect = requests.exceptions.RequestException("Network Error")
                 result = CatFactView.addFacts()
                 self.assertEqual(result, [])
@@ -127,16 +122,14 @@ class CatFactViewTestCase(APITestCase):
     def test_unexpected_error_handling(self):
         with self.settings(FETCH_URL="url", FETCH_FLAG=True):
             with patch('requests.get') as mock_get:
-                # Mock an unexpected exception
                 mock_get.side_effect = Exception("Unexpected Error")
                 result = CatFactView.addFacts()
-                self.assertEqual(result, [])  # No facts should be saved on error
+                self.assertEqual(result, [])  
                 mock_get.assert_called()
 
     def test_http_error_handling(self):
         with self.settings(FETCH_URL="url", FETCH_FLAG=True):
             with patch('requests.get') as mock_get:
-                # Mock a 404 Not Found response
                 mock_response = MagicMock()
                 mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Not Found")
                 mock_response.status_code = 404
