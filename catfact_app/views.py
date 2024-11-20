@@ -3,8 +3,6 @@ import requests
 import logging
 from django.core.exceptions import ImproperlyConfigured
 from requests.exceptions import HTTPError, RequestException
-# from rest_framework.response import Response
-# from rest_framework import status
 from .models import *
 from .serializers import *
 from django.conf import settings
